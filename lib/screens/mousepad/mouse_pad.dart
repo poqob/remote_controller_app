@@ -18,9 +18,9 @@ class _MousePadState extends State<MousePad> with Connection {
   @override
   Widget build(BuildContext context) {
     return Listener(
-      onPointerMove: (event) => name(event),
+      onPointerMove: (event) => mouse(event, MouseActions.MOVE),
       child: Container(
-        color: Colors.black,
+        color: Colors.grey[900],
       ),
     );
   }
@@ -44,15 +44,21 @@ mixin Connection on State<MousePad> {
     super.dispose();
   }
 
-  Future<void> name(PointerEvent event) async {
+  Future<void> mouse(PointerEvent event, MouseActions action) async {
     var model = Model(
         type: InputType.MOUSE,
         data: MouseModel(
                 mMode: MousePadBehaviour.STATIC,
-                x: event.position.dx.toInt(),
-                y: event.position.dy.toInt(),
-                action: MouseActions.MOVE)
+                x: _scale(
+                    event.position.dx, MediaQuery.of(context).size.width, 1600),
+                y: _scale(
+                    event.position.dy, MediaQuery.of(context).size.height, 900),
+                action: action)
             .toJson());
     await communication.send(model);
+  }
+
+  int _scale(num input, num device, num host) {
+    return input * host ~/ device;
   }
 }
