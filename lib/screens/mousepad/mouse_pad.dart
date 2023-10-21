@@ -15,12 +15,20 @@ class MousePad extends StatefulWidget {
 }
 
 class _MousePadState extends State<MousePad> with Connection {
+  DragUpdateDetails? _lastevent;
+
   @override
   Widget build(BuildContext context) {
-    return Listener(
-      onPointerMove: (event) => mouse(event, MouseActions.MOVE),
+    return GestureDetector(
+      onPanUpdate: (details) {
+        mouse(event: details, action: MouseActions.MOVE);
+        _lastevent = details;
+      },
+      onTap: () => mouse(event: _lastevent, action: MouseActions.LEFT_CLICK),
+      onLongPress: () =>
+          mouse(event: _lastevent, action: MouseActions.RIGHT_CLICK),
       child: Container(
-        color: Colors.grey[900],
+        color: Colors.black,
       ),
     );
   }
@@ -44,15 +52,20 @@ mixin Connection on State<MousePad> {
     super.dispose();
   }
 
-  Future<void> mouse(PointerEvent event, MouseActions action) async {
+  Future<void> mouse(
+      {DragUpdateDetails? event, required MouseActions action}) async {
     var model = Model(
         type: InputType.MOUSE,
         data: MouseModel(
                 mMode: MousePadBehaviour.STATIC,
                 x: _scale(
-                    event.position.dx, MediaQuery.of(context).size.width, 1600),
+                    event!.localPosition.dx,
+                    MediaQuery.of(context).size.width,
+                    1600), // TODO: 1600 computer screen size depend on pixel density
                 y: _scale(
-                    event.position.dy, MediaQuery.of(context).size.height, 900),
+                    event.localPosition.dy,
+                    MediaQuery.of(context).size.height,
+                    900), // TODO: 900 computer screen size depend on pixel density
                 action: action)
             .toJson());
     await communication.send(model);
