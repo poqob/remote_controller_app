@@ -34,7 +34,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      body: MousePad(),
+      body: Center(child: MousePad()),
     );
   }
 }

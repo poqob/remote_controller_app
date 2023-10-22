@@ -7,10 +7,12 @@ import 'package:remote_controller_app/models/mouse/mouse_pad_behaviour.dart';
 import 'package:remote_controller_app/screens/mousepad/mouse_pad.dart';
 
 mixin MouseInput on State<MousePad> {
+  Offset? lastOffsetPoint;
   Map<String, int> hostScreenSize = {
     "width": 1600,
     "height": 900
   }; // TODO: TAKE THIS INPUT FROM UI
+
   Model mouse({Offset? offset, required MouseActions action}) {
     return Model(
         type: InputType.MOUSE,
