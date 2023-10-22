@@ -23,6 +23,10 @@ class MousePad extends StatefulWidget {
 class _MousePadState extends State<MousePad> with Connection, MouseInput {
   @override
   Widget build(BuildContext context) {
+    return pad();
+  }
+
+  GestureDetector pad() {
     return GestureDetector(
       onTap: () async => await communication.send(
           mouse(offset: lastOffsetPoint, action: MouseActions.LEFT_CLICK)),
@@ -40,20 +44,25 @@ class _MousePadState extends State<MousePad> with Connection, MouseInput {
         }
       },
       onScaleUpdate: (ScaleUpdateDetails details) async {
+        //lastOffsetPoint = details.focalPoint;
         if (details.pointerCount == 1) {
           await communication.send(
               mouse(offset: details.focalPoint, action: MouseActions.MOVE));
-          lastOffsetPoint = details.focalPoint;
+        }
+        if (details.pointerCount == 2) {
+          // controll scroll gesture
+          print(details.localFocalPoint);
+          await Future.delayed(const Duration(milliseconds: 800));
+          await communication.send(mouse(
+              offset: details.focalPoint, action: MouseActions.SCROLL_UP));
         }
         // Track the scale factor as the user continues to scale
-        double scaleFactor = details.scale;
+        //double scaleFactor = details.scale;
         //print('Scale factor: $scaleFactor');
       },
       onScaleEnd: (details) {
-        if (details.pointerCount == 1) {
-          communication.send(
-              mouse(offset: lastOffsetPoint, action: MouseActions.RELEASE));
-        }
+        communication
+            .send(mouse(offset: lastOffsetPoint, action: MouseActions.RELEASE));
       },
       child: Container(
         color: Colors.black,
