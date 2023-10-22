@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:remote_controller_app/models/model/input_type.dart';
-import 'package:remote_controller_app/models/model/model.dart';
 import 'package:remote_controller_app/models/mouse/mouse_actions.dart';
-import 'package:remote_controller_app/models/mouse/mouse_model.dart';
-import 'package:remote_controller_app/models/mouse/mouse_pad_behaviour.dart';
-import 'package:remote_controller_app/models/network/a_communication.dart';
-import 'package:remote_controller_app/models/network/lan.dart';
+import 'package:remote_controller_app/screens/mousepad/mouse_pad_connection_mixin.dart';
+import 'package:remote_controller_app/screens/mousepad/mouse_pad_mouse_input_mixin.dart';
 
 class MousePad extends StatefulWidget {
   const MousePad({super.key});
@@ -14,64 +10,54 @@ class MousePad extends StatefulWidget {
   State<MousePad> createState() => _MousePadState();
 }
 
-class _MousePadState extends State<MousePad> with Connection {
-  DragUpdateDetails? _lastevent;
-
+/*
+ onPanStart: (details) => (lastOffsetPoint = details.localPosition),
+      onPanUpdate: (details) async {
+        await communication.send(
+            mouse(offset: details.localPosition, action: MouseActions.MOVE));
+        lastOffsetPoint = details.localPosition;
+      },
+      onPanEnd: (details) => communication
+          .send(mouse(offset: lastOffsetPoint, action: MouseActions.RELEASE)),
+ */
+class _MousePadState extends State<MousePad> with Connection, MouseInput {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onPanUpdate: (details) {
-        mouse(event: details, action: MouseActions.MOVE);
-        _lastevent = details;
+      onTap: () async => await communication.send(
+          mouse(offset: lastOffsetPoint, action: MouseActions.LEFT_CLICK)),
+      onLongPress: () async => await communication.send(
+          mouse(offset: lastOffsetPoint, action: MouseActions.RIGHT_CLICK)),
+      onDoubleTapDown: (details) => communication.send(mouse(
+          offset: details.localPosition, action: MouseActions.DRAG_START)),
+      onScaleStart: (ScaleStartDetails details) {
+        if (details.pointerCount == 1) lastOffsetPoint = details.focalPoint;
+
+        // Check if two fingers are touching the screen
+        if (details.pointerCount == 2) {
+          // Two fingers are touching the screen
+          //print('Two fingers are touching the screen');
+        }
       },
-      onTap: () => mouse(event: _lastevent, action: MouseActions.LEFT_CLICK),
-      onLongPress: () =>
-          mouse(event: _lastevent, action: MouseActions.RIGHT_CLICK),
+      onScaleUpdate: (ScaleUpdateDetails details) async {
+        if (details.pointerCount == 1) {
+          await communication.send(
+              mouse(offset: details.focalPoint, action: MouseActions.MOVE));
+          lastOffsetPoint = details.focalPoint;
+        }
+        // Track the scale factor as the user continues to scale
+        double scaleFactor = details.scale;
+        //print('Scale factor: $scaleFactor');
+      },
+      onScaleEnd: (details) {
+        if (details.pointerCount == 1) {
+          communication.send(
+              mouse(offset: lastOffsetPoint, action: MouseActions.RELEASE));
+        }
+      },
       child: Container(
         color: Colors.black,
       ),
     );
-  }
-}
-
-mixin Connection on State<MousePad> {
-  ACommunication communication = LAN("192.168.8.121", 5100);
-  @override
-  void initState() {
-    () async {
-      await communication.connect();
-    };
-    super.initState();
-  }
-
-  @override
-  dispose() {
-    () async {
-      await communication.disconnect();
-    };
-    super.dispose();
-  }
-
-  Future<void> mouse(
-      {DragUpdateDetails? event, required MouseActions action}) async {
-    var model = Model(
-        type: InputType.MOUSE,
-        data: MouseModel(
-                mMode: MousePadBehaviour.STATIC,
-                x: _scale(
-                    event!.localPosition.dx,
-                    MediaQuery.of(context).size.width,
-                    1600), // TODO: 1600 computer screen size depend on pixel density
-                y: _scale(
-                    event.localPosition.dy,
-                    MediaQuery.of(context).size.height,
-                    900), // TODO: 900 computer screen size depend on pixel density
-                action: action)
-            .toJson());
-    await communication.send(model);
-  }
-
-  int _scale(num input, num device, num host) {
-    return input * host ~/ device;
   }
 }

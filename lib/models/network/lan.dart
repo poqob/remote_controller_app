@@ -41,6 +41,6 @@ class LAN extends ACommunication {
     final encodedMessage = utf8.encode(message);
     await connect();
     socket!.send(encodedMessage, InternetAddress(ip), port);
-    print(message);
+    // print(message);
   }
 }
