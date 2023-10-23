@@ -2,5 +2,5 @@
 
 enum MousePadBehaviour {
   STATIC,
-  DYNAMIC,
+  DYNAMIC, // TODO: Implement dynamic mouse pad behaviour
 }
