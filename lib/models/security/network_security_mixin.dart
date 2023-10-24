@@ -1,0 +1,1 @@
+// TODO: create a mixin that will be created on a_communication class. modify-encrypt sended packages.

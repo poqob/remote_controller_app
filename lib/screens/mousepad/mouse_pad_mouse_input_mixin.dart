@@ -6,17 +6,14 @@ import 'package:remote_controller_app/models/mouse/mouse_model.dart';
 import 'package:remote_controller_app/models/mouse/mouse_pad_behaviour.dart';
 import 'package:remote_controller_app/models/screen/screens_mixin.dart';
 import 'package:remote_controller_app/screens/mousepad/mouse_pad.dart';
-import 'package:remote_controller_app/screens/mousepad/mouse_scroll_mixin.dart';
 
 mixin MouseInput on State<MousePad>
-    implements DeviceScreen, HostScreen, MouseScrollMixin {
-  Offset? lastOffsetPoint;
+    implements DeviceScreen, HostScreen, MousePadBehaviourMixin {
   Model mouse({Offset? offset, required MouseActions action}) {
     return Model(
         type: InputType.MOUSE,
         data: MouseModel(
-                mMode: MousePadBehaviour
-                    .STATIC, // Mouse pad behaviour will be a value which can selectable on ui.
+                mMode: mousePadBehaviour,
                 x: _scale(
                     offset!.dx, DeviceScreen.width!, HostScreen.width as num),
                 y: _scale(

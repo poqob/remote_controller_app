@@ -1,9 +1,11 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:remote_controller_app/models/mouse/mouse_actions.dart';
+import 'package:remote_controller_app/models/mouse/mouse_pad_behaviour.dart';
 import 'package:remote_controller_app/models/screen/screens_mixin.dart';
 import 'package:remote_controller_app/screens/mousepad/mouse_pad_connection_mixin.dart';
 import 'package:remote_controller_app/screens/mousepad/mouse_pad_mouse_input_mixin.dart';
-import 'package:remote_controller_app/screens/mousepad/mouse_scroll_mixin.dart';
 
 class MousePad extends StatefulWidget {
   const MousePad({super.key});
@@ -13,7 +15,12 @@ class MousePad extends StatefulWidget {
 }
 
 class _MousePadState extends State<MousePad>
-    with Connection, MouseInput, DeviceScreen, HostScreen, MouseScrollMixin {
+    with
+        Connection,
+        MouseInput,
+        DeviceScreen,
+        HostScreen,
+        MousePadBehaviourMixin {
   @override
   void initState() {
     super.initState();
@@ -55,18 +62,34 @@ class _MousePadState extends State<MousePad>
         if (details.pointerCount == 1) {
           lastOffsetPoint = details.localFocalPoint;
         }
+        // it confuses with scroll up-down.
         if (details.pointerCount == 2) {
-          lastOffsetPoint = details.localFocalPoint;
-          await communication.send(
-              mouse(offset: lastOffsetPoint, action: MouseActions.RIGHT_CLICK));
+          //lastOffsetPoint = details.localFocalPoint;
+          // await communication.send(
+          //   mouse(offset: lastOffsetPoint, action: MouseActions.RIGHT_CLICK));
         }
       },
       onScaleUpdate: (ScaleUpdateDetails details) async {
         if (details.pointerCount == 1) {
-          //await Future.delayed(const Duration(milliseconds: 10)); // optional
-          await communication.send(mouse(
-              offset: details.localFocalPoint, action: MouseActions.MOVE));
+          // MOUSE MODE DYNAMIC
+          if (mousePadBehaviour == MousePadBehaviour.DYNAMIC) {
+            if (firstMoveOffsetPoint == null) {
+              firstMoveOffsetPoint = details.localFocalPoint;
+            } else {
+              currentMoveOffsetPoint = details.localFocalPoint;
+              lastOffsetPoint = currentMoveOffsetPoint! - firstMoveOffsetPoint!;
+
+              await communication.send(
+                  mouse(offset: lastOffsetPoint, action: MouseActions.MOVE));
+              firstMoveOffsetPoint = currentMoveOffsetPoint;
+            }
+          } else {
+            // MOUSE MODE STATIC
+            await communication.send(mouse(
+                offset: details.localFocalPoint, action: MouseActions.MOVE));
+          }
         }
+
         if (details.pointerCount == 2) {
           // two finger scroll Mechanism.
           if (firstScrollOffsetPoint == null) {
@@ -87,6 +110,10 @@ class _MousePadState extends State<MousePad>
             }
             firstScrollOffsetPoint = currentScrollOffsetPoint;
           }
+        }
+        // triple finger tap Mechanism.
+        if (details.pointerCount == 3) {
+          //  print("TRIPLE KILL");
         }
       },
       onScaleEnd: (details) async => await communication
