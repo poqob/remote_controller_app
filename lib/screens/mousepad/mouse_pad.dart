@@ -1,9 +1,7 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:remote_controller_app/models/mouse/mouse_actions.dart';
-import 'package:remote_controller_app/models/mouse/mouse_pad_behaviour.dart';
 import 'package:remote_controller_app/models/screen/screens_mixin.dart';
+import 'package:remote_controller_app/screens/mousepad/mouse_pad_behaviour_mixin.dart';
 import 'package:remote_controller_app/screens/mousepad/mouse_pad_connection_mixin.dart';
 import 'package:remote_controller_app/screens/mousepad/mouse_pad_mouse_input_mixin.dart';
 
@@ -56,8 +54,13 @@ class _MousePadState extends State<MousePad>
     return GestureDetector(
       onTap: () async => await communication.send(
           mouse(offset: lastOffsetPoint, action: MouseActions.LEFT_CLICK)),
-      onDoubleTapDown: (details) => communication.send(mouse(
-          offset: details.localPosition, action: MouseActions.DRAG_START)),
+      onDoubleTapDown: (details) {
+        // in server side my package handler mechanism only understand drag start event with two trigger package.
+        communication.send(mouse(
+            offset: details.localPosition, action: MouseActions.DRAG_START));
+        communication.send(mouse(
+            offset: details.localPosition, action: MouseActions.DRAG_START));
+      },
       onScaleStart: (ScaleStartDetails details) async {
         if (details.pointerCount == 1) {
           lastOffsetPoint = details.localFocalPoint;
@@ -65,30 +68,13 @@ class _MousePadState extends State<MousePad>
         // it confuses with scroll up-down.
         if (details.pointerCount == 2) {
           //lastOffsetPoint = details.localFocalPoint;
-          // await communication.send(
-          //   mouse(offset: lastOffsetPoint, action: MouseActions.RIGHT_CLICK));
+          //await communication.send(
+          //  mouse(offset: lastOffsetPoint, action: MouseActions.RIGHT_CLICK));
         }
       },
       onScaleUpdate: (ScaleUpdateDetails details) async {
-        if (details.pointerCount == 1) {
-          // MOUSE MODE DYNAMIC
-          if (mousePadBehaviour == MousePadBehaviour.DYNAMIC) {
-            if (firstMoveOffsetPoint == null) {
-              firstMoveOffsetPoint = details.localFocalPoint;
-            } else {
-              currentMoveOffsetPoint = details.localFocalPoint;
-              lastOffsetPoint = currentMoveOffsetPoint! - firstMoveOffsetPoint!;
-
-              await communication.send(
-                  mouse(offset: lastOffsetPoint, action: MouseActions.MOVE));
-              firstMoveOffsetPoint = currentMoveOffsetPoint;
-            }
-          } else {
-            // MOUSE MODE STATIC
-            await communication.send(mouse(
-                offset: details.localFocalPoint, action: MouseActions.MOVE));
-          }
-        }
+        await communication.send(
+            mouse(offset: details.localFocalPoint, action: MouseActions.MOVE));
 
         if (details.pointerCount == 2) {
           // two finger scroll Mechanism.
